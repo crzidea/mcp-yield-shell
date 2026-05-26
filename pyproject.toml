@@ -1,6 +1,6 @@
 [project]
 name = "mcp-yield-shell"
-version = "0.1.0"
+version = "0.1.1"
 description = "A drop-in shell MCP that auto-yields long-running commands into managed background processes."
 requires-python = ">=3.11"
 dependencies = ["mcp>=1.9.0,<2"]
