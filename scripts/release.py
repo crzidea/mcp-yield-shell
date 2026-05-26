@@ -44,17 +44,41 @@ def set_version(new_version):
     with open("pyproject.toml", "w") as f:
         f.write(new_content)
 
+def get_next_version(current_version, bump_type):
+    match = re.match(r'^(\d+)\.(\d+)\.(\d+)(.*)$', current_version)
+    if not match:
+        return None
+    major, minor, patch, suffix = match.groups()
+    if bump_type == "patch":
+        return f"{major}.{minor}.{int(patch) + 1}"
+    elif bump_type == "minor":
+        return f"{major}.{int(minor) + 1}.0"
+    elif bump_type == "major":
+        return f"{int(major) + 1}.0.0"
+    return None
+
 def main():
     # Ensure we are in git repository root
     if not os.path.exists(".git"):
         print("Error: Must run from the root of the git repository.")
         sys.exit(1)
 
+    # Parse arguments
+    non_interactive = False
+    if "--yes" in sys.argv or "-y" in sys.argv:
+        non_interactive = True
+        sys.argv = [arg for arg in sys.argv if arg not in ("--yes", "-y")]
+
+    version_arg = sys.argv[1].lower() if len(sys.argv) > 1 else None
+
     # 1. Check git status
     status = run_cmd("git status --porcelain")
     if status.stdout.strip():
         print("Warning: You have uncommitted changes in your git repository:")
         print(status.stdout)
+        if non_interactive:
+            print("Aborting: Git workspace is not clean in non-interactive mode.")
+            sys.exit(1)
         confirm = input("Do you want to proceed anyway? (y/N): ").strip().lower()
         if confirm != 'y':
             print("Aborted.")
@@ -67,14 +91,52 @@ def main():
         sys.exit(1)
     
     print(f"Current version: {current_version}")
-    new_version = input("Enter new version (e.g. 0.1.1): ").strip()
+
+    # Determine new version
+    next_patch = get_next_version(current_version, "patch")
+    next_minor = get_next_version(current_version, "minor")
+    next_major = get_next_version(current_version, "major")
+
+    new_version = None
+    if version_arg:
+        if version_arg == "patch":
+            new_version = next_patch
+        elif version_arg == "minor":
+            new_version = next_minor
+        elif version_arg == "major":
+            new_version = next_major
+        elif re.match(r'^\d+\.\d+\.\d+(?:[a-zA-Z0-9.-]+)?$', version_arg):
+            new_version = version_arg
+        else:
+            print(f"Error: Invalid version or bump type '{version_arg}'")
+            print("Usage: ./scripts/release.py [patch|minor|major|<version>] [-y|--yes]")
+            sys.exit(1)
+
     if not new_version:
-        print("Aborted.")
-        sys.exit(0)
-        
-    # Validate version format roughly (X.Y.Z)
+        if non_interactive:
+            new_version = next_patch
+            if not new_version:
+                print("Error: Could not calculate next patch version automatically.")
+                sys.exit(1)
+            print(f"Automatically selected next patch version: {new_version}")
+        else:
+            default_str = f" [default: {next_patch}]" if next_patch else ""
+            user_input = input(f"Enter new version{default_str}: ").strip()
+            if not user_input:
+                if next_patch:
+                    new_version = next_patch
+                else:
+                    print("Error: No version provided and cannot calculate patch default.")
+                    sys.exit(1)
+            else:
+                new_version = user_input
+
+    # Validate version format roughly
     if not re.match(r'^\d+\.\d+\.\d+(?:[a-zA-Z0-9.-]+)?$', new_version):
-        print("Warning: Version format does not look standard (e.g. 1.0.0 or 1.0.0-beta.1)")
+        print(f"Warning: Version format '{new_version}' does not look standard (e.g. 1.0.0)")
+        if non_interactive:
+            print("Aborting: Invalid version format in non-interactive mode.")
+            sys.exit(1)
         confirm = input("Proceed with this version name? (y/N): ").strip().lower()
         if confirm != 'y':
             sys.exit(1)
@@ -90,8 +152,12 @@ def main():
     print(f"Committed and tagged with v{new_version}")
 
     # 5. Push
-    push_confirm = input("Push commit and tag to origin? (y/N): ").strip().lower()
-    if push_confirm == 'y':
+    if non_interactive:
+        push_confirm = True
+    else:
+        push_confirm = input("Push commit and tag to origin? (y/N): ").strip().lower() == 'y'
+
+    if push_confirm:
         # Get current branch
         branch_res = run_cmd("git branch --show-current")
         branch = branch_res.stdout.strip()
