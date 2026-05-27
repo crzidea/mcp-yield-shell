@@ -74,9 +74,9 @@ class RingBuffer:
                     "next_seq": self._seq_source[0],
                     "truncated": truncated,
                 }
-            # Find first chunk with seq > since_seq
+            # Find first chunk with seq >= since_seq
             for i, (seq, _) in enumerate(self._chunks):
-                if seq > since_seq:
+                if seq >= since_seq:
                     start_idx = i
                     break
             else:

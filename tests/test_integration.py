@@ -125,25 +125,20 @@ class TestIncrementalRead:
     @pytest.mark.asyncio
     async def test_read_streams_filter(self, manager):
         result = await manager.exec_command(
-            "echo out && echo err >&2", yield_ms=1000
+            "echo out && echo err >&2 && sleep 5", yield_ms=100
         )
-        if result["status"] == "backgrounded":
-            pid = result["process_id"]
-        else:
-            # Completed fast enough
-            assert result["status"] == "completed"
-            pid = None
+        assert result["status"] == "backgrounded"
+        pid = result["process_id"]
 
-        if pid:
-            await asyncio.sleep(0.3)
-            stdout_only = await manager.read_output(pid, streams="stdout")
-            assert "stdout" in stdout_only
-            assert "stderr" not in stdout_only
+        await asyncio.sleep(0.3)
+        stdout_only = await manager.read_output(pid, streams="stdout")
+        assert "stdout" in stdout_only
+        assert "stderr" not in stdout_only
 
-            stderr_only = await manager.read_output(pid, streams="stderr")
-            assert "stderr" in stderr_only
-            assert "stdout" not in stderr_only
-            await manager.stop_process(pid, force_after_ms=500)
+        stderr_only = await manager.read_output(pid, streams="stderr")
+        assert "stderr" in stderr_only
+        assert "stdout" not in stderr_only
+        await manager.stop_process(pid, force_after_ms=500)
 
 
 class TestWrite:
@@ -151,52 +146,52 @@ class TestWrite:
     async def test_write_to_stdin(self, manager):
         # Use a Python process that echoes stdin lines back to stdout
         cmd = (
-            f"{sys.executable} -c \""
-            "import sys\\n"
-            "for line in sys.stdin:\\n"
-            "    print(f'got: {line.strip()}', flush=True)"
-            "\""
+            f"{sys.executable} -c '"
+            "import sys\n"
+            "for line in sys.stdin:\n"
+            "    print(f\"got: {line.strip()}\", flush=True)"
+            "'"
         )
         result = await manager.exec_command(
             cmd, yield_ms=200
         )
-        if result["status"] == "backgrounded":
-            pid = result["process_id"]
-            await asyncio.sleep(0.2)
-            write_result = await manager.write_input(pid, "hello", newline=True)
-            assert write_result["ok"] is True
-            await asyncio.sleep(0.3)
-            read_result = await manager.read_output(pid, streams="stdout")
-            assert "got: hello" in read_result.get("stdout", "")
-            assert "ok" in write_result
-            await manager.stop_process(pid, force_after_ms=500)
+        assert result["status"] == "backgrounded"
+        pid = result["process_id"]
+        await asyncio.sleep(0.2)
+        write_result = await manager.write_input(pid, "hello", newline=True)
+        assert write_result["ok"] is True
+        await asyncio.sleep(0.3)
+        read_result = await manager.read_output(pid, streams="stdout")
+        assert "got: hello" in read_result.get("stdout", "")
+        assert "ok" in write_result
+        await manager.stop_process(pid, force_after_ms=500)
 
     @pytest.mark.asyncio
     async def test_write_after_initial_stdin(self, manager):
         """Providing stdin in exec must not close the pipe; follow-up write must work."""
         cmd = (
-            f"{sys.executable} -c \""
-            "import sys\\n"
-            "for line in sys.stdin:\\n"
-            "    print(f'got: {line.strip()}', flush=True)"
-            "\""
+            f"{sys.executable} -c '"
+            "import sys\n"
+            "for line in sys.stdin:\n"
+            "    print(f\"got: {line.strip()}\", flush=True)"
+            "'"
         )
         result = await manager.exec_command(
             cmd, stdin="first\n", yield_ms=200
         )
-        if result["status"] == "backgrounded":
-            pid = result["process_id"]
-            await asyncio.sleep(0.3)
-            # Initial stdin data should appear in output
-            read1 = await manager.read_output(pid, streams="stdout")
-            assert "got: first" in read1.get("stdout", "")
-            # Follow-up write must succeed (stdin must still be open)
-            write_result = await manager.write_input(pid, "second", newline=True)
-            assert write_result["ok"] is True
-            await asyncio.sleep(0.3)
-            read2 = await manager.read_output(pid, since_seq=read1["next_seq"], streams="stdout")
-            assert "got: second" in read2.get("stdout", "")
-            await manager.stop_process(pid, force_after_ms=500)
+        assert result["status"] == "backgrounded"
+        pid = result["process_id"]
+        await asyncio.sleep(0.3)
+        # Initial stdin data should appear in output
+        read1 = await manager.read_output(pid, streams="stdout")
+        assert "got: first" in read1.get("stdout", "")
+        # Follow-up write must succeed (stdin must still be open)
+        write_result = await manager.write_input(pid, "second", newline=True)
+        assert write_result["ok"] is True
+        await asyncio.sleep(0.3)
+        read2 = await manager.read_output(pid, since_seq=read1["next_seq"], streams="stdout")
+        assert "got: second" in read2.get("stdout", "")
+        await manager.stop_process(pid, force_after_ms=500)
 
     @pytest.mark.asyncio
     async def test_write_unknown_process(self, manager):
@@ -339,13 +334,13 @@ class TestCleanup:
         result = await manager.exec_command(
             "sleep 30", yield_ms=100
         )
-        if result["status"] == "backgrounded":
-            pid = result["process_id"]
-            cleanup_result = await manager.cleanup(
-                completed_older_than_ms=0, stopped_older_than_ms=0
-            )
-            assert cleanup_result["removed"] == 0
-            await manager.stop_process(pid, force_after_ms=500)
+        assert result["status"] == "backgrounded"
+        pid = result["process_id"]
+        cleanup_result = await manager.cleanup(
+            completed_older_than_ms=0, stopped_older_than_ms=0
+        )
+        assert cleanup_result["removed"] == 0
+        await manager.stop_process(pid, force_after_ms=500)
 
 
 class TestPs:

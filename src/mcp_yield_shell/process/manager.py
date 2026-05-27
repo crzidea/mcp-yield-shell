@@ -500,7 +500,7 @@ class ProcessManager:
 
         # Send requested signal
         sig = get_signal(signal_name)
-        if sig is not None and sys.platform != "win32":
+        if sig is not None and sys.platform != "win32" and mp.proc.pid is not None:
             try:
                 os.killpg(os.getpgid(mp.proc.pid), sig)
             except (ProcessLookupError, PermissionError):

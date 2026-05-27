@@ -99,16 +99,17 @@ class TestRingBufferSequence:
         buf.append(b"first")
         buf.append(b" second")
         buf.append(b" third")
-        # since_seq=2 should return only data after chunk 2
+        # since_seq=2 should return data from sequence 2 onwards (chunk 2 and 3)
         result = buf.read(since_seq=2)
+        assert "second" in result["text"]
         assert "third" in result["text"]
         assert "first" not in result["text"]
-        assert "second" not in result["text"]
 
     def test_since_seq_returns_empty_when_no_new_data(self):
         buf = RingBuffer(100)
         buf.append(b"first")
-        result = buf.read(since_seq=1)
+        # next_seq is 2. Querying with since_seq=2 returns empty
+        result = buf.read(since_seq=2)
         assert result["text"] == ""
         assert result["next_seq"] == 2
 
@@ -169,8 +170,8 @@ class TestRingBufferSharedSeq:
         buf_b.append(b"err1")  # seq 2
         buf_a.append(b"out2")  # seq 3
         assert buf_a.next_seq == buf_b.next_seq  # Both see seq=4
-        # Reading buf_a with since_seq=2 should return only out2
-        result = buf_a.read(since_seq=2)
+        # Reading buf_a with since_seq=3 should return only out2
+        result = buf_a.read(since_seq=3)
         assert "out2" in result["text"]
         assert "out1" not in result["text"]
 
@@ -181,9 +182,9 @@ class TestRingBufferSharedSeq:
         stdout_buf.append(b"out1")  # seq 1
         stderr_buf.append(b"err1")  # seq 2
         stdout_buf.append(b"out2")  # seq 3
-        # since_seq=1 on both buffers should skip seq 1 data
-        stdout_result = stdout_buf.read(since_seq=1)
-        stderr_result = stderr_buf.read(since_seq=1)
+        # since_seq=2 on both buffers should skip seq 1 data (out1) but include err1 and out2
+        stdout_result = stdout_buf.read(since_seq=2)
+        stderr_result = stderr_buf.read(since_seq=2)
         assert "out2" in stdout_result["text"]
         assert "out1" not in stdout_result["text"]
         assert "err1" in stderr_result["text"]
