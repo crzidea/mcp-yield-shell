@@ -90,15 +90,14 @@ class RingBuffer:
         # Concatenate data from start_idx onwards
         data = b"".join(chunk_data for _, chunk_data in self._chunks[start_idx:])
 
-        # Decode as UTF-8 with replacement
-        text = data.decode("utf-8", errors="replace")
-
         # Apply max_bytes cap
         effective_max = max_bytes or self._max_bytes
-        text_bytes = text.encode("utf-8", errors="replace")
-        if len(text_bytes) > effective_max:
+        if len(data) > effective_max:
             truncated = True
-            text = text_bytes[:effective_max].decode("utf-8", errors="replace")
+            data = data[:effective_max]
+
+        # Decode as UTF-8 with replacement
+        text = data.decode("utf-8", errors="replace")
 
         return {
             "text": text,

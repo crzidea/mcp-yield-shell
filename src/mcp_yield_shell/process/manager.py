@@ -28,6 +28,7 @@ class ManagedProcess:
         "completion_task",
         "timeout_task",
         "_seq_source",
+        "_timeout_triggered",
     )
 
     def __init__(
@@ -46,6 +47,7 @@ class ManagedProcess:
         self.completion_event: asyncio.Event = asyncio.Event()
         self.completion_task: asyncio.Task[None] | None = None
         self.timeout_task: asyncio.Task[None] | None = None
+        self._timeout_triggered = False
 
 
 class ProcessManager:
@@ -101,7 +103,10 @@ class ProcessManager:
             return {"status": "failed_to_start", "error": cwd_error}
 
         # Check process count limit
-        if len(self._processes) >= self._config.max_processes:
+        running_count = sum(
+            1 for p in self._processes.values() if p.info.status == ProcessStatus.RUNNING
+        )
+        if running_count >= self._config.max_processes:
             return {
                 "status": "failed_to_start",
                 "error": f"Maximum process limit ({self._config.max_processes}) reached",
@@ -291,6 +296,9 @@ class ProcessManager:
             if mp.info.status == ProcessStatus.RUNNING:
                 mp.info.status = ProcessStatus.FAILED
         finally:
+            if mp.timeout_task is not None and not mp.timeout_task.done():
+                if not mp._timeout_triggered:
+                    mp.timeout_task.cancel()
             mp.completion_event.set()
 
     def _exit_signal(self, proc: asyncio.subprocess.Process) -> str | None:
@@ -313,7 +321,11 @@ class ProcessManager:
 
     async def _handle_timeout(self, mp: ManagedProcess, timeout_sec: float) -> None:
         """Handle total runtime timeout: graceful terminate then force kill."""
-        await asyncio.sleep(timeout_sec)
+        try:
+            await asyncio.sleep(timeout_sec)
+        except asyncio.CancelledError:
+            return
+        mp._timeout_triggered = True
         if mp.info.status != ProcessStatus.RUNNING:
             return
         # Graceful termination

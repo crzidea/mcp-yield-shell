@@ -468,3 +468,36 @@ class TestAutoBackgroundFalseWithTimeout:
             "sleep 60", auto_background=False, yield_ms=100, timeout_ms=500
         )
         assert result["status"] in ("timed_out", "completed")
+
+
+class TestDefectFixes:
+    @pytest.mark.asyncio
+    async def test_max_processes_allows_sequential(self, monkeypatch):
+        monkeypatch.setenv("YIELD_SHELL_MAX_PROCESSES", "2")
+        config = Config()
+        mgr = ProcessManager(config)
+
+        # Run two commands that complete
+        await mgr.exec_command("echo hello", auto_background=False)
+        await mgr.exec_command("echo world", auto_background=False)
+
+        # Third should succeed as completed ones don't count against limit
+        r3 = await mgr.exec_command("echo test", auto_background=False)
+        assert r3["status"] == "completed"
+        assert "test" in r3["stdout"]
+
+    @pytest.mark.asyncio
+    async def test_timeout_task_cancelled_on_natural_completion(self, manager):
+        result = await manager.exec_command(
+            "echo test", timeout_ms=60000, auto_background=False
+        )
+        assert result["status"] == "completed"
+
+        # Find the process and check that its timeout task is cancelled
+        ps_result = manager.list_processes(limit=1)
+        pid = ps_result["processes"][0]["process_id"]
+        mp = manager.get_process(pid)
+        assert mp is not None
+        assert mp.timeout_task is not None
+        assert mp.timeout_task.cancelled() or mp.timeout_task.done()
+
