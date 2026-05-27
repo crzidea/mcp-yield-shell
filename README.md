@@ -141,10 +141,9 @@ Execute a shell command. If the command runs longer than `yield_ms`, it yields a
     *   `shell` (string, optional): A custom shell path to execute commands (e.g. `/bin/zsh`). Internally executed using the platform's default shell handler if omitted.
     *   `stdin` (string, optional): Initial text input written to standard input immediately after spawning.
     *   `name` (string, optional): A human-readable label/name to identify this process.
-    *   `yield_ms` (integer, optional): Milliseconds to wait before yielding execution to background. Clamped by `YIELD_SHELL_MAX_YIELD_MS`. Defaults to `YIELD_SHELL_DEFAULT_YIELD_MS` (1000ms).
+    *   `yield_ms` (integer, optional): Milliseconds to wait before yielding execution to background. Clamped by `YIELD_SHELL_MAX_YIELD_MS`. Defaults to `YIELD_SHELL_DEFAULT_YIELD_MS` (5000ms).
     *   `timeout_ms` (integer, optional): Total execution runtime limit in milliseconds. Process is killed if it runs longer than this. Defaults to `YIELD_SHELL_DEFAULT_TIMEOUT_MS` (0 = no limit).
     *   `max_output_bytes` (integer, optional): Maximum output bytes to capture in stdout/stderr ring buffers. Subject to `YIELD_SHELL_MAX_OUTPUT_BYTES` cap.
-    *   `auto_background` (boolean, default: `true`): If `true`, yields after `yield_ms`. If `false`, blocks until the command completes or times out.
 
 *   **Output Statuses**:
     *   `completed`: Process finished within `yield_ms`. Returns exit code, stdout, and stderr.
@@ -229,8 +228,8 @@ Configure the server by setting these environment variables prior to launch:
 | `YIELD_SHELL_ALLOWED_CWDS` | *(none)* | A list of allowed directory paths separated by `os.pathsep` (e.g., `:` on UNIX, `;` on Windows). If set, all command execution paths must resolve inside one of these roots. |
 | `YIELD_SHELL_MAX_OUTPUT_BYTES` | `20000` | The default and maximum capacity of the ring buffers for stdout/stderr. |
 | `YIELD_SHELL_MAX_PROCESSES` | `50` | Maximum concurrent managed processes. Spawning a new command when this limit is reached will return `failed_to_start`. |
-| `YIELD_SHELL_DEFAULT_YIELD_MS` | `1000` | Fallback delay before auto-yielding. |
-| `YIELD_SHELL_MAX_YIELD_MS` | `30000` | The maximum allowed value for the `yield_ms` parameter. |
+| `YIELD_SHELL_DEFAULT_YIELD_MS` | `5000` | Fallback delay before auto-yielding. |
+| `YIELD_SHELL_MAX_YIELD_MS` | `300000` | The maximum allowed value for the `yield_ms` parameter. |
 | `YIELD_SHELL_DEFAULT_TIMEOUT_MS` | `0` | Default hard runtime limit (0 means no limit). |
 | `YIELD_SHELL_DENY_COMMAND_REGEX` | *(none)* | A regular expression pattern. Commands matching this pattern are blocked before starting. |
 | `YIELD_SHELL_ALLOW_COMMAND_REGEX` | *(none)* | A regular expression pattern. If set, only commands matching this pattern are permitted. |

@@ -87,7 +87,6 @@ class ProcessManager:
         yield_ms: int | None = None,
         timeout_ms: int | None = None,
         max_output_bytes: int | None = None,
-        auto_background: bool = True,
     ) -> dict[str, Any]:
         """Execute a shell command with auto-yield behavior."""
         from ..security import build_env, resolve_cwd, validate_command
@@ -174,16 +173,12 @@ class ProcessManager:
             )
 
         # Wait up to yield_ms for completion
-        if auto_background:
-            try:
-                await asyncio.wait_for(
-                    mp.completion_event.wait(), timeout=effective_yield / 1000.0
-                )
-            except asyncio.TimeoutError:
-                pass
-        else:
-            # Wait until completion (timeout task will kill the process if set)
-            await mp.completion_event.wait()
+        try:
+            await asyncio.wait_for(
+                mp.completion_event.wait(), timeout=effective_yield / 1000.0
+            )
+        except asyncio.TimeoutError:
+            pass
 
         duration_ms = (time.monotonic() - start_time) * 1000
 

@@ -20,11 +20,11 @@ class TestConfigDefaults:
 
     def test_default_yield_ms(self):
         config = Config()
-        assert config.default_yield_ms == 1000
+        assert config.default_yield_ms == 5000
 
     def test_default_max_yield_ms(self):
         config = Config()
-        assert config.max_yield_ms == 30000
+        assert config.max_yield_ms == 300000
 
     def test_default_timeout_ms(self):
         config = Config()

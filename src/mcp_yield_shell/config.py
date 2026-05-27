@@ -19,10 +19,10 @@ class Config:
             os.environ.get("YIELD_SHELL_MAX_PROCESSES", ""), 50
         )
         self.default_yield_ms: int = _parse_int(
-            os.environ.get("YIELD_SHELL_DEFAULT_YIELD_MS", ""), 1000
+            os.environ.get("YIELD_SHELL_DEFAULT_YIELD_MS", ""), 5000
         )
         self.max_yield_ms: int = _parse_int(
-            os.environ.get("YIELD_SHELL_MAX_YIELD_MS", ""), 30000
+            os.environ.get("YIELD_SHELL_MAX_YIELD_MS", ""), 300000
         )
         self.default_timeout_ms: int = _parse_int(
             os.environ.get("YIELD_SHELL_DEFAULT_TIMEOUT_MS", ""), 0

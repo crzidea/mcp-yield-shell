@@ -67,7 +67,7 @@ class TestLongCommand:
     @pytest.mark.asyncio
     async def test_backgrounded_status(self, short_yield_manager):
         result = await short_yield_manager.exec_command(
-            "sleep 10", yield_ms=100, auto_background=True
+            "sleep 10", yield_ms=100
         )
         assert result["status"] == "backgrounded"
         assert "process_id" in result
@@ -79,7 +79,7 @@ class TestLongCommand:
     async def test_wait_returns_completed(self, manager):
         # Start a short process that backgrounds
         result = await manager.exec_command(
-            "echo hello && sleep 1", yield_ms=100, auto_background=True
+            "echo hello && sleep 1", yield_ms=100
         )
         assert result["status"] == "backgrounded"
         pid = result["process_id"]
@@ -93,7 +93,7 @@ class TestYieldZero:
     @pytest.mark.asyncio
     async def test_yield_zero_backgrounds(self, manager):
         result = await manager.exec_command(
-            "sleep 5", yield_ms=0, auto_background=True
+            "sleep 5", yield_ms=0
         )
         assert result["status"] == "backgrounded"
         await manager.stop_process(result["process_id"], force_after_ms=500)
@@ -103,7 +103,7 @@ class TestIncrementalRead:
     @pytest.mark.asyncio
     async def test_read_since_seq(self, manager):
         result = await manager.exec_command(
-            "echo first && sleep 0.2 && echo second", yield_ms=100, auto_background=True
+            "echo first && sleep 0.2 && echo second", yield_ms=100
         )
         assert result["status"] == "backgrounded"
         pid = result["process_id"]
@@ -125,7 +125,7 @@ class TestIncrementalRead:
     @pytest.mark.asyncio
     async def test_read_streams_filter(self, manager):
         result = await manager.exec_command(
-            "echo out && echo err >&2", yield_ms=1000, auto_background=True
+            "echo out && echo err >&2", yield_ms=1000
         )
         if result["status"] == "backgrounded":
             pid = result["process_id"]
@@ -158,7 +158,7 @@ class TestWrite:
             "\""
         )
         result = await manager.exec_command(
-            cmd, yield_ms=200, auto_background=True
+            cmd, yield_ms=200
         )
         if result["status"] == "backgrounded":
             pid = result["process_id"]
@@ -182,7 +182,7 @@ class TestWrite:
             "\""
         )
         result = await manager.exec_command(
-            cmd, stdin="first\n", yield_ms=200, auto_background=True
+            cmd, stdin="first\n", yield_ms=200
         )
         if result["status"] == "backgrounded":
             pid = result["process_id"]
@@ -209,7 +209,7 @@ class TestStop:
     @pytest.mark.asyncio
     async def test_stop_running_process(self, manager):
         result = await manager.exec_command(
-            "sleep 60", yield_ms=100, auto_background=True
+            "sleep 60", yield_ms=100
         )
         assert result["status"] == "backgrounded"
         pid = result["process_id"]
@@ -221,7 +221,7 @@ class TestStop:
     async def test_stop_with_sigint(self, manager):
         """Test stop with a custom signal (SIGINT) before default SIGTERM."""
         result = await manager.exec_command(
-            "sleep 60", yield_ms=100, auto_background=True
+            "sleep 60", yield_ms=100
         )
         assert result["status"] == "backgrounded"
         pid = result["process_id"]
@@ -242,7 +242,7 @@ class TestTimeout:
     @pytest.mark.asyncio
     async def test_timeout_kills_process(self, manager):
         result = await manager.exec_command(
-            "sleep 60", yield_ms=500, timeout_ms=500, auto_background=True
+            "sleep 60", yield_ms=500, timeout_ms=500
         )
         # Should get backgrounded first, then timeout kills it
         if result["status"] == "backgrounded":
@@ -324,15 +324,6 @@ class TestRedaction:
         assert "[REDACTED:" in result["stdout"]
 
 
-class TestAutoBackgroundFalse:
-    @pytest.mark.asyncio
-    async def test_auto_background_false_waits(self, manager):
-        result = await manager.exec_command(
-            "echo hello", auto_background=False, yield_ms=100
-        )
-        assert result["status"] == "completed"
-        assert "hello" in result["stdout"]
-
 
 class TestCleanup:
     @pytest.mark.asyncio
@@ -346,7 +337,7 @@ class TestCleanup:
     @pytest.mark.asyncio
     async def test_cleanup_does_not_remove_running(self, manager):
         result = await manager.exec_command(
-            "sleep 30", yield_ms=100, auto_background=True
+            "sleep 30", yield_ms=100
         )
         if result["status"] == "backgrounded":
             pid = result["process_id"]
@@ -398,11 +389,11 @@ class TestProcessLimit:
         mgr = ProcessManager(config)
 
         # Start two long-running processes
-        r1 = await mgr.exec_command("sleep 30", yield_ms=0, auto_background=True)
-        r2 = await mgr.exec_command("sleep 30", yield_ms=0, auto_background=True)
+        r1 = await mgr.exec_command("sleep 30", yield_ms=0)
+        r2 = await mgr.exec_command("sleep 30", yield_ms=0)
 
         # Third should be rejected
-        r3 = await mgr.exec_command("echo nope", yield_ms=0, auto_background=True)
+        r3 = await mgr.exec_command("echo nope", yield_ms=0)
         if r1["status"] == "backgrounded" and r2["status"] == "backgrounded":
             assert r3["status"] == "failed_to_start"
             assert "limit" in r3["error"].lower()
@@ -435,7 +426,7 @@ class TestStopResponseShape:
     @pytest.mark.asyncio
     async def test_stop_success_includes_error_field(self, manager):
         result = await manager.exec_command(
-            "sleep 60", yield_ms=100, auto_background=True
+            "sleep 60", yield_ms=100
         )
         assert result["status"] == "backgrounded"
         pid = result["process_id"]
@@ -461,14 +452,6 @@ class TestReadStreamValidation:
         assert "error" in read_result
 
 
-class TestAutoBackgroundFalseWithTimeout:
-    @pytest.mark.asyncio
-    async def test_auto_background_false_with_timeout_returns_timed_out(self, manager):
-        result = await manager.exec_command(
-            "sleep 60", auto_background=False, yield_ms=100, timeout_ms=500
-        )
-        assert result["status"] in ("timed_out", "completed")
-
 
 class TestDefectFixes:
     @pytest.mark.asyncio
@@ -478,18 +461,18 @@ class TestDefectFixes:
         mgr = ProcessManager(config)
 
         # Run two commands that complete
-        await mgr.exec_command("echo hello", auto_background=False)
-        await mgr.exec_command("echo world", auto_background=False)
+        await mgr.exec_command("echo hello")
+        await mgr.exec_command("echo world")
 
         # Third should succeed as completed ones don't count against limit
-        r3 = await mgr.exec_command("echo test", auto_background=False)
+        r3 = await mgr.exec_command("echo test")
         assert r3["status"] == "completed"
         assert "test" in r3["stdout"]
 
     @pytest.mark.asyncio
     async def test_timeout_task_cancelled_on_natural_completion(self, manager):
         result = await manager.exec_command(
-            "echo test", timeout_ms=60000, auto_background=False
+            "echo test", timeout_ms=60000
         )
         assert result["status"] == "completed"
 

@@ -30,7 +30,6 @@ async def exec(
     yield_ms: int | None = None,
     timeout_ms: int | None = None,
     max_output_bytes: int | None = None,
-    auto_background: bool = True,
 ) -> dict:
     """Execute a shell command with auto-yield for long-running processes."""
     return await _get_manager().exec_command(
@@ -43,7 +42,6 @@ async def exec(
         yield_ms=yield_ms,
         timeout_ms=timeout_ms,
         max_output_bytes=max_output_bytes,
-        auto_background=auto_background,
     )
 
 
