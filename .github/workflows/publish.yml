@@ -59,7 +59,7 @@ jobs:
 
     environment:
       name: pypi
-      url: https://pypi.org/p/mcp-yield-shell
+      url: https://pypi.org/p/mcp-yieldshell
 
     steps:
       - name: Checkout repository

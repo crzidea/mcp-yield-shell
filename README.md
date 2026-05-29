@@ -1,4 +1,4 @@
-# Yield Shell MCP
+# YieldShell MCP
 
 A drop-in shell MCP server that auto-yields long-running commands into managed background processes.
 
@@ -6,7 +6,7 @@ A drop-in shell MCP server that auto-yields long-running commands into managed b
 
 Most shell tools present a frustrating choice: either block the LLM agent until the command finishes, or force the agent to decide upfront that a command should run in the background.
 
-**Yield Shell MCP** solves this by keeping normal foreground semantics for fast commands, then automatically promoting long-running commands into managed background processes after a brief delay (`yield_ms`, default: 1 second).
+**YieldShell MCP** solves this by keeping normal foreground semantics for fast commands, then automatically promoting long-running commands into managed background processes after a brief delay (`yield_ms`, default: 1 second).
 
 ```mermaid
 graph TD
@@ -28,7 +28,7 @@ graph TD
 To run the published package via `uv`:
 
 ```bash
-uv tool install mcp-yield-shell
+uv tool install mcp-yieldshell
 ```
 
 ### Local Development
@@ -36,9 +36,9 @@ uv tool install mcp-yield-shell
 To clone and run locally:
 
 ```bash
-git clone <repo-url> && cd mcp-yield-shell
+git clone <repo-url> && cd mcp-yieldshell
 uv sync
-uv run mcp-yield-shell
+uv run mcp-yieldshell
 ```
 
 ---
@@ -57,9 +57,9 @@ To configure the server in Claude Desktop, add the configuration below to your C
 ```json
 {
   "mcpServers": {
-    "yield-shell": {
+    "yieldshell": {
       "command": "uvx",
-      "args": ["mcp-yield-shell"]
+      "args": ["mcp-yieldshell"]
     }
   }
 }
@@ -70,12 +70,12 @@ To configure the server in Claude Desktop, add the configuration below to your C
 ```json
 {
   "mcpServers": {
-    "yield-shell": {
+    "yieldshell": {
       "command": "uvx",
-      "args": ["mcp-yield-shell"],
+      "args": ["mcp-yieldshell"],
       "env": {
-        "YIELD_SHELL_ALLOWED_CWDS": "/home/user/projects:/tmp/build",
-        "YIELD_SHELL_DEFAULT_TIMEOUT_MS": "300000"
+        "YIELDSHELL_ALLOWED_CWDS": "/home/user/projects:/tmp/build",
+        "YIELDSHELL_DEFAULT_TIMEOUT_MS": "300000"
       }
     }
   }
@@ -84,18 +84,18 @@ To configure the server in Claude Desktop, add the configuration below to your C
 
 #### Local Development Setup
 
-Replace `/path/to/mcp-yield-shell` with the absolute path to your cloned repository:
+Replace `/path/to/mcp-yieldshell` with the absolute path to your cloned repository:
 
 ```json
 {
   "mcpServers": {
-    "yield-shell": {
+    "yieldshell": {
       "command": "uv",
       "args": [
         "--directory",
-        "/path/to/mcp-yield-shell",
+        "/path/to/mcp-yieldshell",
         "run",
-        "mcp-yield-shell"
+        "mcp-yieldshell"
       ]
     }
   }
@@ -108,9 +108,9 @@ To configure the server in Cursor:
 1. Open **Cursor Settings** -> **Features** -> **MCP**.
 2. Click **+ Add New MCP Server**.
 3. Fill out the form:
-   - **Name**: `yield-shell`
+   - **Name**: `yieldshell`
    - **Type**: `stdio`
-   - **Command**: `uvx mcp-yield-shell` (or `uv --directory /path/to/mcp-yield-shell run mcp-yield-shell` for local development)
+   - **Command**: `uvx mcp-yieldshell` (or `uv --directory /path/to/mcp-yieldshell run mcp-yieldshell` for local development)
 
 ### OpenCode
 
@@ -119,9 +119,9 @@ Add to your OpenCode MCP settings:
 ```json
 {
   "mcpServers": {
-    "yield-shell": {
+    "yieldshell": {
       "command": "uvx",
-      "args": ["mcp-yield-shell"]
+      "args": ["mcp-yieldshell"]
     }
   }
 }
@@ -136,14 +136,14 @@ Execute a shell command. If the command runs longer than `yield_ms`, it yields a
 
 *   **Parameters**:
     *   `command` (string, **required**): The command string to execute in the shell.
-    *   `cwd` (string, optional): Working directory for the command. Must be under allowed roots if `YIELD_SHELL_ALLOWED_CWDS` is set. Defaults to `YIELD_SHELL_DEFAULT_CWD`.
+    *   `cwd` (string, optional): Working directory for the command. Must be under allowed roots if `YIELDSHELL_ALLOWED_CWDS` is set. Defaults to `YIELDSHELL_DEFAULT_CWD`.
     *   `env` (object of string to string, optional): Additive environment variable overlay. Merged into the parent environment.
     *   `shell` (string, optional): A custom shell path to execute commands (e.g. `/bin/zsh`). Internally executed using the platform's default shell handler if omitted.
     *   `stdin` (string, optional): Initial text input written to standard input immediately after spawning.
     *   `name` (string, optional): A human-readable label/name to identify this process.
-    *   `yield_ms` (integer, optional): Milliseconds to wait before yielding execution to background. Clamped by `YIELD_SHELL_MAX_YIELD_MS`. Defaults to `YIELD_SHELL_DEFAULT_YIELD_MS` (5000ms).
-    *   `timeout_ms` (integer, optional): Total execution runtime limit in milliseconds. Process is killed if it runs longer than this. Defaults to `YIELD_SHELL_DEFAULT_TIMEOUT_MS` (0 = no limit).
-    *   `max_output_bytes` (integer, optional): Maximum output bytes to capture in stdout/stderr ring buffers. Subject to `YIELD_SHELL_MAX_OUTPUT_BYTES` cap.
+    *   `yield_ms` (integer, optional): Milliseconds to wait before yielding execution to background. Clamped by `YIELDSHELL_MAX_YIELD_MS`. Defaults to `YIELDSHELL_DEFAULT_YIELD_MS` (5000ms).
+    *   `timeout_ms` (integer, optional): Total execution runtime limit in milliseconds. Process is killed if it runs longer than this. Defaults to `YIELDSHELL_DEFAULT_TIMEOUT_MS` (0 = no limit).
+    *   `max_output_bytes` (integer, optional): Maximum output bytes to capture in stdout/stderr ring buffers. Subject to `YIELDSHELL_MAX_OUTPUT_BYTES` cap.
 
 *   **Output Statuses**:
     *   `completed`: Process finished within `yield_ms`. Returns exit code, stdout, and stderr.
@@ -224,16 +224,16 @@ Configure the server by setting these environment variables prior to launch:
 
 | Environment Variable | Default Value | Description |
 |---|---|---|
-| `YIELD_SHELL_DEFAULT_CWD` | Current directory | The fallback working directory for commands. |
-| `YIELD_SHELL_ALLOWED_CWDS` | *(none)* | A list of allowed directory paths separated by `os.pathsep` (e.g., `:` on UNIX, `;` on Windows). If set, all command execution paths must resolve inside one of these roots. |
-| `YIELD_SHELL_MAX_OUTPUT_BYTES` | `20000` | The default and maximum capacity of the ring buffers for stdout/stderr. |
-| `YIELD_SHELL_MAX_PROCESSES` | `50` | Maximum concurrent managed processes. Spawning a new command when this limit is reached will return `failed_to_start`. |
-| `YIELD_SHELL_DEFAULT_YIELD_MS` | `5000` | Fallback delay before auto-yielding. |
-| `YIELD_SHELL_MAX_YIELD_MS` | `300000` | The maximum allowed value for the `yield_ms` parameter. |
-| `YIELD_SHELL_DEFAULT_TIMEOUT_MS` | `0` | Default hard runtime limit (0 means no limit). |
-| `YIELD_SHELL_DENY_COMMAND_REGEX` | *(none)* | A regular expression pattern. Commands matching this pattern are blocked before starting. |
-| `YIELD_SHELL_ALLOW_COMMAND_REGEX` | *(none)* | A regular expression pattern. If set, only commands matching this pattern are permitted. |
-| `YIELD_SHELL_REDACT_ENV_REGEX` | `TOKEN\|KEY\|SECRET\|PASSWORD` | Regex to identify sensitive environment variable keys. Their values are redacted in stdout/stderr outputs. |
+| `YIELDSHELL_DEFAULT_CWD` | Current directory | The fallback working directory for commands. |
+| `YIELDSHELL_ALLOWED_CWDS` | *(none)* | A list of allowed directory paths separated by `os.pathsep` (e.g., `:` on UNIX, `;` on Windows). If set, all command execution paths must resolve inside one of these roots. |
+| `YIELDSHELL_MAX_OUTPUT_BYTES` | `20000` | The default and maximum capacity of the ring buffers for stdout/stderr. |
+| `YIELDSHELL_MAX_PROCESSES` | `50` | Maximum concurrent managed processes. Spawning a new command when this limit is reached will return `failed_to_start`. |
+| `YIELDSHELL_DEFAULT_YIELD_MS` | `5000` | Fallback delay before auto-yielding. |
+| `YIELDSHELL_MAX_YIELD_MS` | `300000` | The maximum allowed value for the `yield_ms` parameter. |
+| `YIELDSHELL_DEFAULT_TIMEOUT_MS` | `0` | Default hard runtime limit (0 means no limit). |
+| `YIELDSHELL_DENY_COMMAND_REGEX` | *(none)* | A regular expression pattern. Commands matching this pattern are blocked before starting. |
+| `YIELDSHELL_ALLOW_COMMAND_REGEX` | *(none)* | A regular expression pattern. If set, only commands matching this pattern are permitted. |
+| `YIELDSHELL_REDACT_ENV_REGEX` | `TOKEN\|KEY\|SECRET\|PASSWORD` | Regex to identify sensitive environment variable keys. Their values are redacted in stdout/stderr outputs. |
 
 ---
 
@@ -242,7 +242,7 @@ Configure the server by setting these environment variables prior to launch:
 *   **Arbitrary Code Execution**: This server executes shell commands on the host system. Always run the server inside a container, sandbox, or isolated development VM.
 *   **Path Validation**: CWD path verification uses absolute paths (`resolve()`), preventing path-traversal attacks (`../`) outside the allowed roots.
 *   **Additive Environments**: The `env` argument overlays existing env parameters. It merges with the parent process environment instead of completely replacing it, protecting critical OS vars.
-*   **Best-effort Redaction**: While values of variables matching `YIELD_SHELL_REDACT_ENV_REGEX` are scrubbed from outputs, this is a best-effort system. Sensitive data printed through complex formats or argument lists might not be caught.
+*   **Best-effort Redaction**: While values of variables matching `YIELDSHELL_REDACT_ENV_REGEX` are scrubbed from outputs, this is a best-effort system. Sensitive data printed through complex formats or argument lists might not be caught.
 
 ---
 

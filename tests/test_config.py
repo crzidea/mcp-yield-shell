@@ -2,7 +2,7 @@
 
 import os
 
-from mcp_yield_shell.config import Config
+from mcp_yieldshell.config import Config
 
 
 class TestConfigDefaults:
@@ -53,40 +53,40 @@ class TestConfigDefaults:
 
 class TestConfigFromEnv:
     def test_custom_max_output_bytes(self, monkeypatch):
-        monkeypatch.setenv("YIELD_SHELL_MAX_OUTPUT_BYTES", "5000")
+        monkeypatch.setenv("YIELDSHELL_MAX_OUTPUT_BYTES", "5000")
         config = Config()
         assert config.max_output_bytes == 5000
 
     def test_custom_max_processes(self, monkeypatch):
-        monkeypatch.setenv("YIELD_SHELL_MAX_PROCESSES", "10")
+        monkeypatch.setenv("YIELDSHELL_MAX_PROCESSES", "10")
         config = Config()
         assert config.max_processes == 10
 
     def test_custom_default_yield_ms(self, monkeypatch):
-        monkeypatch.setenv("YIELD_SHELL_DEFAULT_YIELD_MS", "2000")
+        monkeypatch.setenv("YIELDSHELL_DEFAULT_YIELD_MS", "2000")
         config = Config()
         assert config.default_yield_ms == 2000
 
     def test_deny_command_regex(self, monkeypatch):
-        monkeypatch.setenv("YIELD_SHELL_DENY_COMMAND_REGEX", r"rm\s+-rf")
+        monkeypatch.setenv("YIELDSHELL_DENY_COMMAND_REGEX", r"rm\s+-rf")
         config = Config()
         assert config.deny_command_regex is not None
         assert config.deny_command_regex.search("rm -rf /")
         assert not config.deny_command_regex.search("ls -la")
 
     def test_allow_command_regex(self, monkeypatch):
-        monkeypatch.setenv("YIELD_SHELL_ALLOW_COMMAND_REGEX", r"^git\s+")
+        monkeypatch.setenv("YIELDSHELL_ALLOW_COMMAND_REGEX", r"^git\s+")
         config = Config()
         assert config.allow_command_regex is not None
         assert config.allow_command_regex.search("git status")
         assert not config.allow_command_regex.search("ls -la")
 
     def test_allowed_cwds(self, monkeypatch):
-        monkeypatch.setenv("YIELD_SHELL_ALLOWED_CWDS", "/tmp:/home")
+        monkeypatch.setenv("YIELDSHELL_ALLOWED_CWDS", "/tmp:/home")
         config = Config()
         assert len(config.allowed_cwd_roots) == 2
 
     def test_invalid_int_uses_default(self, monkeypatch):
-        monkeypatch.setenv("YIELD_SHELL_MAX_PROCESSES", "abc")
+        monkeypatch.setenv("YIELDSHELL_MAX_PROCESSES", "abc")
         config = Config()
         assert config.max_processes == 50

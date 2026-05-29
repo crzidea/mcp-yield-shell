@@ -1,1 +1,1 @@
-"""Tests for mcp_yield_shell."""
+"""Tests for mcp_yieldshell."""

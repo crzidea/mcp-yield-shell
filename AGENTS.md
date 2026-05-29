@@ -1,6 +1,6 @@
 # Repository Guidelines & Developer Architecture
 
-This document provides developer-facing guidelines, architectural overviews, and styling rules for `mcp-yield-shell`.
+This document provides developer-facing guidelines, architectural overviews, and styling rules for `mcp-yieldshell`.
 
 ---
 
@@ -18,12 +18,12 @@ graph TD
 
 ### Key Components
 
-*   **`ProcessManager`** (`src/mcp_yield_shell/process/manager.py`):
+*   **`ProcessManager`** (`src/mcp_yieldshell/process/manager.py`):
     *   Acts as the central registry tracking active and completed processes in a dictionary mapped by unique IDs (`proc_<hex>`).
     *   Implements the core MCP tool logic (`exec_command`, `read_output`, `write_input`, `wait_process`, `stop_process`).
-*   **`ManagedProcess`** (`src/mcp_yield_shell/process/manager.py`):
+*   **`ManagedProcess`** (`src/mcp_yieldshell/process/manager.py`):
     *   Groups the underlying `asyncio.subprocess.Process` handle with its stdout/stderr buffers, status, and active control tasks.
-*   **`RingBuffer`** (`src/mcp_yield_shell/process/ring_buffer.py`):
+*   **`RingBuffer`** (`src/mcp_yieldshell/process/ring_buffer.py`):
     *   Maintains a fixed-size, byte-capped buffer for stdout and stderr to avoid unbounded memory growth.
     *   Tracks sequence numbers for chunks of bytes. Readers query the buffer with `since_seq` to retrieve incremental logs.
 
@@ -41,7 +41,7 @@ Whenever a command is executed, `ProcessManager` schedules several async tasks:
 
 ## Platform-Specific Process Group Management
 
-*   **POSIX**: To ensure that child processes launched by commands are fully cleaned up (and not orphaned), commands are spawned with `start_new_session=True` (`src/mcp_yield_shell/process/spawn.py`).
+*   **POSIX**: To ensure that child processes launched by commands are fully cleaned up (and not orphaned), commands are spawned with `start_new_session=True` (`src/mcp_yieldshell/process/spawn.py`).
     *   Process signals are sent via `os.killpg(os.getpgid(pid), signal)` to terminate the entire process group.
 *   **Windows**: Spawning utilizes standard `asyncio.create_subprocess_shell` parameters. Process group termination is not natively supported via POSIX signals, so process termination is best-effort and acts on the primary PID.
 
@@ -50,10 +50,10 @@ Whenever a command is executed, `ProcessManager` schedules several async tasks:
 ## Project Structure & Module Organization
 
 This is a Python 3.11 package using a `src/` layout:
-*   `src/mcp_yield_shell/server.py` and `__main__.py` contain the MCP server wiring and CLI entry points.
-*   `src/mcp_yield_shell/config.py` handles environment-based configuration parsing.
-*   `src/mcp_yield_shell/security.py` controls allowed path roots, command regex rules, and environment overlays/redactions.
-*   `src/mcp_yield_shell/process/` contains execution, buffer, and lifecycle management.
+*   `src/mcp_yieldshell/server.py` and `__main__.py` contain the MCP server wiring and CLI entry points.
+*   `src/mcp_yieldshell/config.py` handles environment-based configuration parsing.
+*   `src/mcp_yieldshell/security.py` controls allowed path roots, command regex rules, and environment overlays/redactions.
+*   `src/mcp_yieldshell/process/` contains execution, buffer, and lifecycle management.
 *   `tests/` mirrors the code structure (e.g. `test_config.py`, `test_ring_buffer.py`, `test_security.py`, `test_integration.py`).
 
 ---
@@ -61,7 +61,7 @@ This is a Python 3.11 package using a `src/` layout:
 ## Build, Test, and Development Commands
 
 *   `uv sync`: Install runtime and development dependencies from `pyproject.toml` and `uv.lock`.
-*   `uv run mcp-yield-shell`: Run the MCP server locally using stdio.
+*   `uv run mcp-yieldshell`: Run the MCP server locally using stdio.
 *   `uv run pytest`: Run the full test suite.
 *   `uv run ruff check .`: Lint imports and check style rules.
 *   `uv run pyright`: Run static type-checking.

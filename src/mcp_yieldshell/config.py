@@ -8,33 +8,33 @@ import re
 
 class Config:
     def __init__(self) -> None:
-        self.default_cwd: str = os.environ.get("YIELD_SHELL_DEFAULT_CWD", os.getcwd())
+        self.default_cwd: str = os.environ.get("YIELDSHELL_DEFAULT_CWD", os.getcwd())
         self.allowed_cwd_roots: list[str] = _parse_pathsep(
-            os.environ.get("YIELD_SHELL_ALLOWED_CWDS", "")
+            os.environ.get("YIELDSHELL_ALLOWED_CWDS", "")
         )
         self.max_output_bytes: int = _parse_int(
-            os.environ.get("YIELD_SHELL_MAX_OUTPUT_BYTES", ""), 20000
+            os.environ.get("YIELDSHELL_MAX_OUTPUT_BYTES", ""), 20000
         )
         self.max_processes: int = _parse_int(
-            os.environ.get("YIELD_SHELL_MAX_PROCESSES", ""), 50
+            os.environ.get("YIELDSHELL_MAX_PROCESSES", ""), 50
         )
         self.default_yield_ms: int = _parse_int(
-            os.environ.get("YIELD_SHELL_DEFAULT_YIELD_MS", ""), 5000
+            os.environ.get("YIELDSHELL_DEFAULT_YIELD_MS", ""), 5000
         )
         self.max_yield_ms: int = _parse_int(
-            os.environ.get("YIELD_SHELL_MAX_YIELD_MS", ""), 300000
+            os.environ.get("YIELDSHELL_MAX_YIELD_MS", ""), 300000
         )
         self.default_timeout_ms: int = _parse_int(
-            os.environ.get("YIELD_SHELL_DEFAULT_TIMEOUT_MS", ""), 0
+            os.environ.get("YIELDSHELL_DEFAULT_TIMEOUT_MS", ""), 0
         )
         self.deny_command_regex: re.Pattern[str] | None = _parse_regex(
-            os.environ.get("YIELD_SHELL_DENY_COMMAND_REGEX", "")
+            os.environ.get("YIELDSHELL_DENY_COMMAND_REGEX", "")
         )
         self.allow_command_regex: re.Pattern[str] | None = _parse_regex(
-            os.environ.get("YIELD_SHELL_ALLOW_COMMAND_REGEX", "")
+            os.environ.get("YIELDSHELL_ALLOW_COMMAND_REGEX", "")
         )
         self.redact_env_regex: re.Pattern[str] = _parse_regex_required(
-            os.environ.get("YIELD_SHELL_REDACT_ENV_REGEX", ""),
+            os.environ.get("YIELDSHELL_REDACT_ENV_REGEX", ""),
             r"TOKEN|KEY|SECRET|PASSWORD",
         )
 

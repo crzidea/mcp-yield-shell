@@ -1,6 +1,6 @@
 """Unit tests for the ring buffer."""
 
-from mcp_yield_shell.process.ring_buffer import RingBuffer
+from mcp_yieldshell.process.ring_buffer import RingBuffer
 
 
 class TestRingBufferAppendRead:

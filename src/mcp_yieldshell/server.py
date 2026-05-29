@@ -1,4 +1,4 @@
-"""FastMCP-style MCP server wiring for Yield Shell tools."""
+"""FastMCP-style MCP server wiring for YieldShell tools."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from mcp.server.fastmcp import FastMCP
 from .config import Config
 from .process.manager import ProcessManager
 
-mcp = FastMCP("Yield Shell MCP")
+mcp = FastMCP("YieldShell MCP")
 
 # Module-level manager, initialized once at startup
 _manager: ProcessManager | None = None

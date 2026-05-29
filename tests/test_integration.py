@@ -6,8 +6,8 @@ import sys
 
 import pytest
 
-from mcp_yield_shell.config import Config
-from mcp_yield_shell.process.manager import ProcessManager
+from mcp_yieldshell.config import Config
+from mcp_yieldshell.process.manager import ProcessManager
 
 
 @pytest.fixture
@@ -23,11 +23,11 @@ def manager(config):
 @pytest.fixture
 def short_yield_config():
     """Config with very short yield for fast tests."""
-    os.environ["YIELD_SHELL_DEFAULT_YIELD_MS"] = "100"
-    os.environ["YIELD_SHELL_MAX_YIELD_MS"] = "5000"
+    os.environ["YIELDSHELL_DEFAULT_YIELD_MS"] = "100"
+    os.environ["YIELDSHELL_MAX_YIELD_MS"] = "5000"
     cfg = Config()
-    del os.environ["YIELD_SHELL_DEFAULT_YIELD_MS"]
-    del os.environ["YIELD_SHELL_MAX_YIELD_MS"]
+    del os.environ["YIELDSHELL_DEFAULT_YIELD_MS"]
+    del os.environ["YIELDSHELL_MAX_YIELD_MS"]
     return cfg
 
 
@@ -252,7 +252,7 @@ class TestTimeout:
 class TestBoundedOutput:
     @pytest.mark.asyncio
     async def test_output_above_cap(self, monkeypatch):
-        monkeypatch.setenv("YIELD_SHELL_MAX_OUTPUT_BYTES", "100")
+        monkeypatch.setenv("YIELDSHELL_MAX_OUTPUT_BYTES", "100")
         config = Config()
         mgr = ProcessManager(config)
         result = await mgr.exec_command(
@@ -271,7 +271,7 @@ class TestBoundedOutput:
 class TestSecurityConfig:
     @pytest.mark.asyncio
     async def test_cwd_restriction(self, monkeypatch):
-        monkeypatch.setenv("YIELD_SHELL_ALLOWED_CWDS", "/tmp")
+        monkeypatch.setenv("YIELDSHELL_ALLOWED_CWDS", "/tmp")
         config = Config()
         mgr = ProcessManager(config)
         result = await mgr.exec_command("echo hello", cwd="/etc")
@@ -279,7 +279,7 @@ class TestSecurityConfig:
 
     @pytest.mark.asyncio
     async def test_command_deny(self, monkeypatch):
-        monkeypatch.setenv("YIELD_SHELL_DENY_COMMAND_REGEX", r"rm\s")
+        monkeypatch.setenv("YIELDSHELL_DENY_COMMAND_REGEX", r"rm\s")
         config = Config()
         mgr = ProcessManager(config)
         result = await mgr.exec_command("rm -rf /tmp/test")
@@ -287,7 +287,7 @@ class TestSecurityConfig:
 
     @pytest.mark.asyncio
     async def test_command_allow(self, monkeypatch):
-        monkeypatch.setenv("YIELD_SHELL_ALLOW_COMMAND_REGEX", r"^echo\s")
+        monkeypatch.setenv("YIELDSHELL_ALLOW_COMMAND_REGEX", r"^echo\s")
         config = Config()
         mgr = ProcessManager(config)
         result = await mgr.exec_command("ls -la")
@@ -379,7 +379,7 @@ class TestPs:
 class TestProcessLimit:
     @pytest.mark.asyncio
     async def test_max_processes_rejects(self, monkeypatch):
-        monkeypatch.setenv("YIELD_SHELL_MAX_PROCESSES", "2")
+        monkeypatch.setenv("YIELDSHELL_MAX_PROCESSES", "2")
         config = Config()
         mgr = ProcessManager(config)
 
@@ -451,7 +451,7 @@ class TestReadStreamValidation:
 class TestDefectFixes:
     @pytest.mark.asyncio
     async def test_max_processes_allows_sequential(self, monkeypatch):
-        monkeypatch.setenv("YIELD_SHELL_MAX_PROCESSES", "2")
+        monkeypatch.setenv("YIELDSHELL_MAX_PROCESSES", "2")
         config = Config()
         mgr = ProcessManager(config)
 

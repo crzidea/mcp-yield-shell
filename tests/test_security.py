@@ -3,8 +3,8 @@
 import os
 from pathlib import Path
 
-from mcp_yield_shell.config import Config
-from mcp_yield_shell.security import build_env, redact_text, resolve_cwd, validate_command
+from mcp_yieldshell.config import Config
+from mcp_yieldshell.security import build_env, redact_text, resolve_cwd, validate_command
 
 
 class TestValidateCommand:
@@ -13,26 +13,26 @@ class TestValidateCommand:
         assert validate_command(config, "rm -rf /") is None
 
     def test_deny_regex_rejects(self, monkeypatch):
-        monkeypatch.setenv("YIELD_SHELL_DENY_COMMAND_REGEX", r"rm\s+-rf")
+        monkeypatch.setenv("YIELDSHELL_DENY_COMMAND_REGEX", r"rm\s+-rf")
         config = Config()
         error = validate_command(config, "rm -rf /")
         assert error is not None
         assert "denied" in error.lower()
 
     def test_deny_regex_allows_non_matching(self, monkeypatch):
-        monkeypatch.setenv("YIELD_SHELL_DENY_COMMAND_REGEX", r"rm\s+-rf")
+        monkeypatch.setenv("YIELDSHELL_DENY_COMMAND_REGEX", r"rm\s+-rf")
         config = Config()
         assert validate_command(config, "ls -la") is None
 
     def test_allow_regex_rejects_non_matching(self, monkeypatch):
-        monkeypatch.setenv("YIELD_SHELL_ALLOW_COMMAND_REGEX", r"^git\s+")
+        monkeypatch.setenv("YIELDSHELL_ALLOW_COMMAND_REGEX", r"^git\s+")
         config = Config()
         error = validate_command(config, "ls -la")
         assert error is not None
         assert "not allowed" in error.lower()
 
     def test_allow_regex_allows_matching(self, monkeypatch):
-        monkeypatch.setenv("YIELD_SHELL_ALLOW_COMMAND_REGEX", r"^git\s+")
+        monkeypatch.setenv("YIELDSHELL_ALLOW_COMMAND_REGEX", r"^git\s+")
         config = Config()
         assert validate_command(config, "git status") is None
 
@@ -51,13 +51,13 @@ class TestResolveCwd:
         assert "/tmp" in path
 
     def test_cwd_under_allowed_root(self, monkeypatch):
-        monkeypatch.setenv("YIELD_SHELL_ALLOWED_CWDS", "/tmp")
+        monkeypatch.setenv("YIELDSHELL_ALLOWED_CWDS", "/tmp")
         config = Config()
         path, error = resolve_cwd(config, "/tmp")
         assert error is None
 
     def test_cwd_not_under_allowed_root(self, monkeypatch):
-        monkeypatch.setenv("YIELD_SHELL_ALLOWED_CWDS", "/tmp")
+        monkeypatch.setenv("YIELDSHELL_ALLOWED_CWDS", "/tmp")
         config = Config()
         path, error = resolve_cwd(config, "/etc")
         assert error is not None
