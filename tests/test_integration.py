@@ -2,6 +2,7 @@
 
 import asyncio
 import os
+import signal
 import sys
 
 import pytest
@@ -87,6 +88,35 @@ class TestLongCommand:
         wait_result = await manager.wait_process(pid, timeout_ms=5000)
         assert wait_result["status"] in ("completed", "stopped")
         assert "hello" in wait_result.get("stdout", "")
+
+    @pytest.mark.asyncio
+    async def test_timeout_force_kills_process_group_after_sigterm_is_ignored(self, manager):
+        if sys.platform == "win32":
+            pytest.skip("POSIX process groups only")
+
+        result = await manager.exec_command(
+            "python -c \"import signal,time; "
+            "signal.signal(signal.SIGTERM, signal.SIG_IGN); time.sleep(30)\"",
+            yield_ms=0,
+            timeout_ms=100,
+        )
+        assert result["status"] == "backgrounded"
+        pid = result["process_id"]
+        pgid = manager._processes[pid].process_group_id
+
+        try:
+            wait_result = await manager.wait_process(pid, timeout_ms=5000)
+
+            assert wait_result["status"] == "timed_out"
+            assert pgid is not None
+            with pytest.raises(ProcessLookupError):
+                os.killpg(pgid, signal.SIGCONT)
+        finally:
+            if pgid is not None:
+                try:
+                    os.killpg(pgid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
 
 
 class TestYieldZero:

@@ -27,6 +27,7 @@ class ManagedProcess:
         "completion_event",
         "completion_task",
         "timeout_task",
+        "process_group_id",
         "_seq_source",
         "_timeout_triggered",
     )
@@ -36,9 +37,11 @@ class ManagedProcess:
         info: ProcessInfo,
         proc: asyncio.subprocess.Process,
         max_output_bytes: int,
+        process_group_id: int | None = None,
     ) -> None:
         self.info = info
         self.proc = proc
+        self.process_group_id = process_group_id
         self._seq_source: list[int] = [1]
         self.stdout_buf = RingBuffer(max_output_bytes, seq_source=self._seq_source)
         self.stderr_buf = RingBuffer(max_output_bytes, seq_source=self._seq_source)
@@ -123,6 +126,7 @@ class ProcessManager:
         except Exception as exc:
             return {"status": "failed_to_start", "error": str(exc)}
 
+        process_group_id = self._get_process_group_id(proc)
         process_id = self._new_id()
         start_time = time.monotonic()
         start_timestamp = time.time()
@@ -138,7 +142,7 @@ class ProcessManager:
             start_monotonic=start_time,
         )
 
-        mp = ManagedProcess(info, proc, effective_max_output)
+        mp = ManagedProcess(info, proc, effective_max_output, process_group_id)
 
         # Start drain tasks immediately after spawn to prevent blocking on full pipe buffers
         mp.drain_stdout = asyncio.create_task(
@@ -248,6 +252,21 @@ class ProcessManager:
             "message": "Process is running in the background. Use read/wait/stop with process_id.",
         }
 
+    def _get_process_group_id(self, proc: asyncio.subprocess.Process) -> int | None:
+        if sys.platform == "win32" or proc.pid is None:
+            return None
+        try:
+            return os.getpgid(proc.pid)
+        except (ProcessLookupError, PermissionError):
+            return None
+
+    def _process_group_id(self, mp: ManagedProcess) -> int:
+        if mp.process_group_id is not None:
+            return mp.process_group_id
+        if mp.proc.pid is None:
+            raise ProcessLookupError
+        return os.getpgid(mp.proc.pid)
+
     async def _drain_stream(
         self, stream: asyncio.StreamReader | None, buf: RingBuffer
     ) -> None:
@@ -286,7 +305,10 @@ class ProcessManager:
             mp.info.ended_at = time.time()
             mp.info.duration_ms = (time.monotonic() - mp.info.start_monotonic) * 1000
             if mp.info.status == ProcessStatus.RUNNING:
-                mp.info.status = ProcessStatus.COMPLETED
+                if mp._timeout_triggered:
+                    mp.info.status = ProcessStatus.TIMED_OUT
+                else:
+                    mp.info.status = ProcessStatus.COMPLETED
         except Exception:
             if mp.info.status == ProcessStatus.RUNNING:
                 mp.info.status = ProcessStatus.FAILED
@@ -324,21 +346,19 @@ class ProcessManager:
         if mp.info.status != ProcessStatus.RUNNING:
             return
         # Graceful termination
-        await terminate_process(mp.proc)
+        await terminate_process(mp.proc, mp.process_group_id)
         grace_period = 3.0
         try:
             await asyncio.wait_for(mp.completion_event.wait(), timeout=grace_period)
         except asyncio.TimeoutError:
             # Force kill
-            await kill_process(mp.proc)
+            await kill_process(mp.proc, mp.process_group_id)
             try:
                 await asyncio.wait_for(mp.completion_event.wait(), timeout=2.0)
             except asyncio.TimeoutError:
                 pass
-        if mp.info.status in (ProcessStatus.RUNNING, ProcessStatus.COMPLETED):
+        if mp.completion_event.is_set() and mp.info.status == ProcessStatus.COMPLETED:
             mp.info.status = ProcessStatus.TIMED_OUT
-            mp.info.ended_at = time.time()
-        mp.completion_event.set()
 
     async def read_output(
         self,
@@ -502,7 +522,7 @@ class ProcessManager:
         sig = get_signal(signal_name)
         if sig is not None and sys.platform != "win32" and mp.proc.pid is not None:
             try:
-                os.killpg(os.getpgid(mp.proc.pid), sig)
+                os.killpg(self._process_group_id(mp), sig)
             except (ProcessLookupError, PermissionError):
                 try:
                     mp.proc.send_signal(sig)
@@ -518,7 +538,7 @@ class ProcessManager:
             )
         except asyncio.TimeoutError:
             # Force kill
-            await kill_process(mp.proc)
+            await kill_process(mp.proc, mp.process_group_id)
             try:
                 await asyncio.wait_for(mp.completion_event.wait(), timeout=2.0)
             except asyncio.TimeoutError:

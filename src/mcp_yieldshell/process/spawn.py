@@ -46,7 +46,9 @@ def get_signal(name: str) -> signal.Signals | None:
         return None
 
 
-async def terminate_process(proc: asyncio.subprocess.Process) -> None:
+async def terminate_process(
+    proc: asyncio.subprocess.Process, process_group_id: int | None = None
+) -> None:
     """Send SIGTERM (or equivalent) to the process group."""
     if sys.platform == "win32":
         proc.terminate()
@@ -54,12 +56,14 @@ async def terminate_process(proc: asyncio.subprocess.Process) -> None:
         pid = proc.pid
         if pid is not None:
             try:
-                os.killpg(os.getpgid(pid), signal.SIGTERM)
+                os.killpg(_process_group_id(pid, process_group_id), signal.SIGTERM)
             except (ProcessLookupError, PermissionError):
                 proc.terminate()
 
 
-async def kill_process(proc: asyncio.subprocess.Process) -> None:
+async def kill_process(
+    proc: asyncio.subprocess.Process, process_group_id: int | None = None
+) -> None:
     """Force kill the process group."""
     if sys.platform == "win32":
         proc.kill()
@@ -67,6 +71,12 @@ async def kill_process(proc: asyncio.subprocess.Process) -> None:
         pid = proc.pid
         if pid is not None:
             try:
-                os.killpg(os.getpgid(pid), signal.SIGKILL)
+                os.killpg(_process_group_id(pid, process_group_id), signal.SIGKILL)
             except (ProcessLookupError, PermissionError):
                 proc.kill()
+
+
+def _process_group_id(pid: int, process_group_id: int | None) -> int:
+    if process_group_id is not None:
+        return process_group_id
+    return os.getpgid(pid)
